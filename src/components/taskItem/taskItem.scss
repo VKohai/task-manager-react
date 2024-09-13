@@ -1,0 +1,18 @@
+.task {
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: row;
+    padding: 24px;
+    gap: 24px;
+
+    &__description {
+        text-wrap: wrap;
+        display: block;
+        word-break: break-all;
+    }
+
+    &__actions {
+        display: flex;
+        gap: 15px;
+    }
+}

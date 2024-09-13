@@ -1,0 +1,18 @@
+@import '~bootstrap/scss/bootstrap';
+
+* {
+    margin: 0;
+    padding: 0;
+    font-family: "SF Pro Display";
+    color: #110d1a;
+    list-style-type: none;
+}
+
+.App {
+    margin-top: 200px;
+}
+
+h1 {
+    text-align: center;
+    color: #f6f6f6;
+}
