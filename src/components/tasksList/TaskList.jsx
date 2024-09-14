@@ -70,7 +70,7 @@ function TaskList() {
         }
     }
 
-    const onComplete = async (id) => {
+    const onTaskUpdate = async (task) => {
         // let - созание переменной, котоую можно менять после инициализации
         // const - создание переменной, которую ОБЯЗАТЕЛЬНО надо иницилизировать при создании и НЕЛЬЗЯ менять в дальнейшем
         let index;
@@ -78,32 +78,33 @@ function TaskList() {
         try {
             for (index = 0; index < tasks.length; ++index) {
                 // Ищем по Id в объекте с полученным объектом
-                if (items[index].id === id) {
-                    // Меняем свойство isCompleted на противоположное значение через знак отрицания !
-                    items[index].isCompleted = !items[index].isCompleted;
-                    await updateTask(items[index]);
+                if (items[index].id === task.id) {
+                    await updateTask(task);
                     // Выходим из цикла
                     break;
                 }
             }
-            // Заменяем массив в состояние на копию 
+            if (index === tasks.length)
+                return;
+
+            // Заменяем массив в состояние на копию
+            items[index].isCompleted = task.isCompleted;
+            items[index].description = task.description;
             setTasks(items);
         } catch (error) {
-            items[index].isCompleted = !items[index].isCompleted;
             console.log(error);
         }
     }
 
     const errMsg = error ? < ErrorMessage msg={error} /> : null;
-    const taskItems = error ? null : tasks.map((task) =>
+    const spinner = loading ? <Spinner /> : null;
+    const taskItems = (loading || error) ? null : tasks.map((task) =>
         <li key={task.id}>
             <TaskItem {...task}
                 onDelete={onDelete}
-                onComplete={onComplete} />
+                onTaskUpdate={onTaskUpdate} />
         </li>
     );
-    const spinner = loading && !taskItems ? <Spinner /> : null;
-
 
     return (
         <section className="task-list">
