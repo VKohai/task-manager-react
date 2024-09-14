@@ -1,14 +1,26 @@
 .task {
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     flex-direction: row;
     padding: 24px;
     gap: 24px;
 
     &__description {
-        text-wrap: wrap;
         display: block;
         word-break: break-all;
+        margin: 0;
+
+        textarea {
+            border: none;
+            width: 100%;
+            height: fit-content;
+            font-size: 32px;
+            font-weight: 500;
+            word-break: break-all;
+            text-wrap: wrap;
+            resize: none;
+            overflow: auto;
+        }
     }
 
     &__actions {

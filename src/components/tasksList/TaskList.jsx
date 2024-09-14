@@ -4,17 +4,39 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import TaskItem from '../taskItem/TaskItem';
 import "./taskList.scss";
-import TaskManagerService from '../../services/TaskManagerService';
+import useTaskService from '../../services/TaskService';
+import ErrorMessage from '../errorMessage/ErrorMessage';
+import { Spinner } from 'react-bootstrap';
 
 function TaskList() {
     const [description, setDescription] = useState("");
     // Массив объектов задач
     const [tasks, setTasks] = useState([])
-    const [lastId, setLastId] = useState(0);
+    const { loading, error, clearError, getAllTasks, addTask, deleteTaskById, updateTask } = useTaskService();
+
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const dataOfTasks = await getAllTasks();
+                setTasks(dataOfTasks);
+            }
+            catch (error) {
+                console.log(error);
+            }
+        }
+        fetchData();
+        // eslint-disable-next-line
+    }, []);
+
+    useEffect(() => {
+        const errorMsgId = setTimeout(() => clearError(), 3000);
+
+        return () => clearTimeout(errorMsgId);
+    }, [error])
 
     function onInputChange(event) {
         const value = event.target.value;
@@ -27,15 +49,8 @@ function TaskList() {
         }
 
         try {
-            // Создаем объект задач
-            const item = {
-                id: lastId,
-                description: description,
-                isCompleted: false
-            };
-            setLastId(lastId => lastId + 1);
+            const item = await addTask(description, false);
 
-            // Сохраняем в массив через деструктуризацию элементов массива
             setTasks([...tasks, item]);
             setDescription("");
         } catch (error) {
@@ -43,30 +58,53 @@ function TaskList() {
         }
     }
 
-    const onDelete = (id) => {
-        const newArr = tasks.filter((item) => {
-            return id !== item.id;
-        });
-        setTasks(newArr);
+    const onDelete = async (id) => {
+        try {
+            await deleteTaskById(id);
+            const newArr = tasks.filter((task) => {
+                return id !== task.id;
+            });
+            setTasks(newArr);
+        } catch (error) {
+            console.log(error);
+        }
     }
 
-    const onComplete = (id) => {
+    const onTaskUpdate = async (task) => {
         // let - созание переменной, котоую можно менять после инициализации
         // const - создание переменной, которую ОБЯЗАТЕЛЬНО надо иницилизировать при создании и НЕЛЬЗЯ менять в дальнейшем
-
+        let index;
         const items = [...tasks]; // Копируем массив
-        for (let index = 0; index < tasks.length; ++index) {
-            // Ищем по Id в объекте с полученным объектом
-            if (items[index].id === id) {
-                // Меняем свойство isCompleted на противоположное значение через знак отрицания !
-                items[index].isCompleted = !items[index].isCompleted;
-                // Выходим из цикла
-                break;
+        try {
+            for (index = 0; index < tasks.length; ++index) {
+                // Ищем по Id в объекте с полученным объектом
+                if (items[index].id === task.id) {
+                    await updateTask(task);
+                    // Выходим из цикла
+                    break;
+                }
             }
+            if (index === tasks.length)
+                return;
+
+            // Заменяем массив в состояние на копию
+            items[index].isCompleted = task.isCompleted;
+            items[index].description = task.description;
+            setTasks(items);
+        } catch (error) {
+            console.log(error);
         }
-        // Заменяем массив в состояние на копию 
-        setTasks(items);
     }
+
+    const errMsg = error ? < ErrorMessage msg={error} /> : null;
+    const spinner = loading ? <Spinner /> : null;
+    const taskItems = (loading || error) ? null : tasks.map((task) =>
+        <li key={task.id}>
+            <TaskItem {...task}
+                onDelete={onDelete}
+                onTaskUpdate={onTaskUpdate} />
+        </li>
+    );
 
     return (
         <section className="task-list">
@@ -92,17 +130,7 @@ function TaskList() {
                 </Card>
                 <Row>
                     <ul className="task-list__items">
-                        {
-                            // Перебираем массив объектов задач (id, description)
-                            // и перекидываем в props компоненту TaskItem
-                            // также перекидываем функцию onDelete, чтобы удалять из состояния items элементы
-                            tasks.map((task) =>
-                                <li key={task.id}>
-                                    <TaskItem {...task}
-                                        onDelete={onDelete}
-                                        onComplete={onComplete} />
-                                </li>
-                            )}
+                        {taskItems}{errMsg}{spinner}
                     </ul>
                 </Row>
             </Container>
