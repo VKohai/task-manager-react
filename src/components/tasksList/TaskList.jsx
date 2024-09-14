@@ -17,26 +17,28 @@ function TaskList() {
     // Массив объектов задач
     const [tasks, setTasks] = useState([])
     const { loading, error, clearError, getAllTasks, addTask, deleteTaskById, updateTask } = useTaskService();
+    const [initialLoading, setInitialLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchData() {
-            try {
-                const dataOfTasks = await getAllTasks();
-                setTasks(dataOfTasks);
-            }
-            catch (error) {
-                console.log(error);
-            }
-        }
-        fetchData();
+        onRequest(true);
         // eslint-disable-next-line
     }, []);
+
+    const onRequest = (init) => {
+        if (init) {
+            setInitialLoading(true);
+        }
+        getAllTasks()
+            .then(setTasks)
+            .catch(console.log)
+            .finally(() => setInitialLoading(false));
+    }
 
     useEffect(() => {
         const errorMsgId = setTimeout(() => clearError(), 3000);
 
         return () => clearTimeout(errorMsgId);
-    }, [error])
+    }, [error]);
 
     function onInputChange(event) {
         const value = event.target.value;
@@ -97,8 +99,8 @@ function TaskList() {
     }
 
     const errMsg = error ? < ErrorMessage msg={error} /> : null;
-    const spinner = loading ? <Spinner /> : null;
-    const taskItems = (loading || error) ? null : tasks.map((task) =>
+    const spinner = loading && initialLoading ? <Spinner /> : null;
+    const content = (loading || error) ? null : tasks.map((task) =>
         <li key={task.id}>
             <TaskItem {...task}
                 onDelete={onDelete}
@@ -130,7 +132,7 @@ function TaskList() {
                 </Card>
                 <Row>
                     <ul className="task-list__items">
-                        {taskItems}{errMsg}{spinner}
+                        {content}{errMsg}{spinner}
                     </ul>
                 </Row>
             </Container>
