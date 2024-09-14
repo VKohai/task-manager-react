@@ -8,18 +8,20 @@ import { useEffect, useState } from 'react';
 
 import TaskItem from '../taskItem/TaskItem';
 import "./taskList.scss";
-import TaskManagerService from '../../services/TaskManagerService';
+import useTaskService from '../../services/TaskService';
+import ErrorMessage from '../errorMessage/ErrorMessage';
+import { Spinner } from 'react-bootstrap';
 
 function TaskList() {
     const [description, setDescription] = useState("");
     // Массив объектов задач
     const [tasks, setTasks] = useState([])
-    const service = new TaskManagerService();
+    const { loading, error, clearError, getAllTasks, addTask, deleteTaskById, updateTask } = useTaskService();
 
     useEffect(() => {
         async function fetchData() {
             try {
-                const dataOfTasks = await service.getAllTasks();
+                const dataOfTasks = await getAllTasks();
                 setTasks(dataOfTasks);
             }
             catch (error) {
@@ -29,6 +31,12 @@ function TaskList() {
         fetchData();
         // eslint-disable-next-line
     }, []);
+
+    useEffect(() => {
+        const errorMsgId = setTimeout(() => clearError(), 3000);
+
+        return () => clearTimeout(errorMsgId);
+    }, [error])
 
     function onInputChange(event) {
         const value = event.target.value;
@@ -41,10 +49,8 @@ function TaskList() {
         }
 
         try {
-            // Создаем объект задач
-            const item = await service.addTask(description, false);
+            const item = await addTask(description, false);
 
-            // Сохраняем в массив через деструктуризацию элементов массива
             setTasks([...tasks, item]);
             setDescription("");
         } catch (error) {
@@ -54,7 +60,7 @@ function TaskList() {
 
     const onDelete = async (id) => {
         try {
-            await service.deleteTaskById(id);
+            await deleteTaskById(id);
             const newArr = tasks.filter((task) => {
                 return id !== task.id;
             });
@@ -75,7 +81,7 @@ function TaskList() {
                 if (items[index].id === id) {
                     // Меняем свойство isCompleted на противоположное значение через знак отрицания !
                     items[index].isCompleted = !items[index].isCompleted;
-                    await service.updateTask(items[index]);
+                    await updateTask(items[index]);
                     // Выходим из цикла
                     break;
                 }
@@ -87,6 +93,17 @@ function TaskList() {
             console.log(error);
         }
     }
+
+    const errMsg = error ? < ErrorMessage msg={error} /> : null;
+    const taskItems = error ? null : tasks.map((task) =>
+        <li key={task.id}>
+            <TaskItem {...task}
+                onDelete={onDelete}
+                onComplete={onComplete} />
+        </li>
+    );
+    const spinner = loading && !taskItems ? <Spinner /> : null;
+
 
     return (
         <section className="task-list">
@@ -112,17 +129,7 @@ function TaskList() {
                 </Card>
                 <Row>
                     <ul className="task-list__items">
-                        {
-                            // Перебираем массив объектов задач (id, description)
-                            // и перекидываем в props компоненту TaskItem
-                            // также перекидываем функцию onDelete, чтобы удалять из состояния items элементы
-                            tasks.map((task) =>
-                                <li key={task.id}>
-                                    <TaskItem {...task}
-                                        onDelete={onDelete}
-                                        onComplete={onComplete} />
-                                </li>
-                            )}
+                        {taskItems}{errMsg}{spinner}
                     </ul>
                 </Row>
             </Container>

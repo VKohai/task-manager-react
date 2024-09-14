@@ -7,8 +7,18 @@
 
     &__description {
         text-wrap: wrap;
-        display: block;
         word-break: break-all;
+        margin: 0;
+
+        textarea {
+            border: none;
+            width: 100%;
+            word-break: break-all;
+            text-wrap: wrap;
+            resize: none;
+            height: fit-content;
+            object-fit: fill;
+        }
     }
 
     &__actions {
