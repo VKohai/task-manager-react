@@ -4,7 +4,7 @@ import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import TaskItem from '../taskItem/TaskItem';
 import "./taskList.scss";
@@ -14,7 +14,21 @@ function TaskList() {
     const [description, setDescription] = useState("");
     // Массив объектов задач
     const [tasks, setTasks] = useState([])
-    const [lastId, setLastId] = useState(0);
+    const service = new TaskManagerService();
+
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const dataOfTasks = await service.getAllTasks();
+                setTasks(dataOfTasks);
+            }
+            catch (error) {
+                console.log(error);
+            }
+        }
+        fetchData();
+        // eslint-disable-next-line
+    }, []);
 
     function onInputChange(event) {
         const value = event.target.value;
@@ -28,12 +42,7 @@ function TaskList() {
 
         try {
             // Создаем объект задач
-            const item = {
-                id: lastId,
-                description: description,
-                isCompleted: false
-            };
-            setLastId(lastId => lastId + 1);
+            const item = await service.addTask(description, false);
 
             // Сохраняем в массив через деструктуризацию элементов массива
             setTasks([...tasks, item]);
@@ -43,29 +52,40 @@ function TaskList() {
         }
     }
 
-    const onDelete = (id) => {
-        const newArr = tasks.filter((item) => {
-            return id !== item.id;
-        });
-        setTasks(newArr);
+    const onDelete = async (id) => {
+        try {
+            await service.deleteTaskById(id);
+            const newArr = tasks.filter((task) => {
+                return id !== task.id;
+            });
+            setTasks(newArr);
+        } catch (error) {
+            console.log(error);
+        }
     }
 
-    const onComplete = (id) => {
+    const onComplete = async (id) => {
         // let - созание переменной, котоую можно менять после инициализации
         // const - создание переменной, которую ОБЯЗАТЕЛЬНО надо иницилизировать при создании и НЕЛЬЗЯ менять в дальнейшем
-
+        let index;
         const items = [...tasks]; // Копируем массив
-        for (let index = 0; index < tasks.length; ++index) {
-            // Ищем по Id в объекте с полученным объектом
-            if (items[index].id === id) {
-                // Меняем свойство isCompleted на противоположное значение через знак отрицания !
-                items[index].isCompleted = !items[index].isCompleted;
-                // Выходим из цикла
-                break;
+        try {
+            for (index = 0; index < tasks.length; ++index) {
+                // Ищем по Id в объекте с полученным объектом
+                if (items[index].id === id) {
+                    // Меняем свойство isCompleted на противоположное значение через знак отрицания !
+                    items[index].isCompleted = !items[index].isCompleted;
+                    await service.updateTask(items[index]);
+                    // Выходим из цикла
+                    break;
+                }
             }
+            // Заменяем массив в состояние на копию 
+            setTasks(items);
+        } catch (error) {
+            items[index].isCompleted = !items[index].isCompleted;
+            console.log(error);
         }
-        // Заменяем массив в состояние на копию 
-        setTasks(items);
     }
 
     return (
