@@ -100,7 +100,7 @@ function TaskList() {
 
     const errMsg = error ? < ErrorMessage msg={error} /> : null;
     const spinner = loading && initialLoading ? <Spinner /> : null;
-    const content = (loading || error) ? null : tasks.map((task) =>
+    const content = tasks.map((task) =>
         <li key={task.id}>
             <TaskItem {...task}
                 onDelete={onDelete}
